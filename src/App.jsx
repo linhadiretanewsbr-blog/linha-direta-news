@@ -452,6 +452,11 @@ const AdminPanel = ({ news, setNews, token, onLogout, refreshNews }) => {
                   <p className="text-xs text-gray-500">{item.date} • {item.category}</p>
                 </div>
                 {!item.id.toString().startsWith('local-') && (
+                 {!item.id.toString().startsWith('local-') && (
+            <button onClick={() => { setFormData(item); window.scrollTo({top: 0}); }} className="text-blue-600 hover:text-blue-800 p-1 mr-2" title="Editar notícia">
+              <Edit className="w-4 h-4" />
+            </button>
+          )}
                     <button onClick={() => handleDelete(item.id)} className="text-red-500 hover:text-red-700 p-1" disabled={loading}>
                     <Trash2 className="w-4 h-4" />
                     </button>
@@ -645,4 +650,5 @@ export default function App() {
       </footer>
     </div>
   );
+
 }
