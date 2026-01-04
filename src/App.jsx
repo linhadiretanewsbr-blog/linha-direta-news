@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Menu, Search, X, ChevronRight, Clock, User, Share2, MessageCircle, TrendingUp, Home, Lock, Plus, Save, Trash2, LogOut, RefreshCw, AlertCircle, WifiOff } from 'lucide-react';
+import { Menu, Search, X, ChevronRight, Clock, User, Share2, MessageCircle, TrendingUp, Home, Lock, Plus, Sa Edit,ve, Trash2, LogOut, RefreshCw, AlertCircle, WifiOff } from 'lucide-react';
 
 // --- CONFIGURAÇÃO SANITY ---
 const PROJECT_ID = 'hun2hrsa';
@@ -652,3 +652,4 @@ export default function App() {
   );
 
 }
+
