@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/draft-generator?secret=super_secret_cron_key_12345",
+      "schedule": "0 11 * * *"
+    }
+  ]
+}
