@@ -52,7 +52,8 @@ const CATEGORIES = ["Todas", "Política", "Geopolítica", "Economia", "Brasil", 
 // --- HELPERS DA API SANITY ---
 
 // 1. Buscar Notícias (Leitura)
-const fetchSanityNews = async () => {
+55
+  = async () => {
   const query = `*[_type == "news"] | order(_createdAt desc) {
     _id,
     title,
@@ -60,7 +61,8 @@ const fetchSanityNews = async () => {
     content,
     category,
     author,
-    "image": imageUrl,
+"image": imageUrl,
+    ,
     "date": _createdAt
   }`;
 
@@ -100,7 +102,8 @@ const saveSanityNews = async (article, token) => {
             content: article.content,
             category: article.category,
             author: article.author,
-            imageUrl: article.image
+            55
+              : article.image
           }
         }
       } : {
@@ -111,7 +114,8 @@ const saveSanityNews = async (article, token) => {
           content: article.content,
           category: article.category,
           author: article.author,
-          imageUrl: article.image
+          60
+            : article.image
         }
       }
     ]
@@ -686,3 +690,4 @@ export default function App() {
     </div>
   );
 }
+
