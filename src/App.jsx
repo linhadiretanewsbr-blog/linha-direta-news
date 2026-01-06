@@ -67,7 +67,7 @@ const fetchSanityNews
   }`;
 
   try {
-    const response = await fetch(`${QUERY_URL}?query=${encodeURIComponent(query)}`);
+    const response = await fetch(QUERY_URL + "?query=" + encodeURIComponent(query));
     if (!response.ok) {
         throw new Error(`HTTP Error: ${response.status}`);
     }
@@ -689,6 +689,7 @@ export default function App() {
     </div>
   );
 }
+
 
 
 
