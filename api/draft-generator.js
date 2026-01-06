@@ -8,11 +8,22 @@ const client = createClient({
   apiVersion: '2024-03-01',
 });
 
+function makeBaseId(article) {
+  const raw = (article?.url || article?.title || '').toString().toLowerCase();
+  const cleaned = raw
+    .replace(/https?:\/\//g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 90);
+
+  return cleaned || `auto-${Date.now()}`;
+}
+
 export default async function handler(req, res) {
   const { secret } = req.query;
 
   // Verificar se o secret está correto
-  if (secret !== process.env.CRON_SECRET) {
+  if (!process.env.CRON_SECRET || secret !== process.env.CRON_SECRET) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
@@ -24,10 +35,8 @@ export default async function handler(req, res) {
     }
 
     const response = await fetch(
-      `https://newsapi.org/v2/everything?q=geopolitica+brasil&sortBy=publishedAt&language=pt&pageSize=5`,
-      {
-        headers: { 'X-API-Key': newsApiKey },
-      }
+      'https://newsapi.org/v2/everything?q=geopolitica+brasil&sortBy=publishedAt&language=pt&pageSize=5',
+      { headers: { 'X-Api-Key': newsApiKey } } // header suportado pela NewsAPI [web:141]
     );
 
     if (!response.ok) {
@@ -41,23 +50,32 @@ export default async function handler(req, res) {
       return res.status(200).json({ message: 'Nenhuma notícia encontrada' });
     }
 
-    // Criar rascunhos no Sanity
+    // Criar rascunhos no Sanity (drafts.)
     const createdDocs = [];
+
     for (const article of articles) {
+      if (!article?.title) continue;
+
+      const baseId = makeBaseId(article);
+      const draftId = `drafts.news-${baseId}`;
+
       const doc = {
+        _id: draftId,
         _type: 'news',
         title: article.title,
-        excerpt: article.description || article.content || 'Noticia interessante',
-        content: article.content || article.description || '',
+        excerpt: article.description || article.content || 'Notícia interessante',
+        content:
+          `Fonte: ${article.url || ''}\n\n` +
+          (article.content || article.description || ''),
         category: 'Brasil',
-        publishedAt: article.publishedAt,
-        author: article.author || 'Agencia de Noticias',
+        author: article.author || 'Agência de Notícias',
         source: article.source?.name || 'Fonte externa',
-        _rev: undefined,
+        imageUrl: article.urlToImage || '',
+        publishedAt: article.publishedAt,
       };
 
       try {
-        const createdDoc = await client.create(doc);
+        const createdDoc = await client.createIfNotExists(doc);
         createdDocs.push(createdDoc);
       } catch (err) {
         console.error('Erro ao criar documento:', err);
