@@ -53,36 +53,25 @@ const CATEGORIES = ["Todas", "Política", "Geopolítica", "Economia", "Brasil", 
 // --- HELPERS DA API SANITY ---
 
 // 1. Buscar Notícias (Leitura)
-const fetchSanityNews
-  = async () => {
-  const query = `*[_type == "news"] | order(_createdAt desc) {
-    _id,
-    title,
-    excerpt,
-    content,
-    category,
-    author,
-    "image": image,
-    "date": _createdAt
-  }`;
-
+const fetchSanityNews = async () => {
+  const url = "https://hun2hrsa.api.sanity.io/v2021-10-21/data/query/production?query=" + encodeURIComponent('*[_type == "news"] | order(_createdAt desc)');
+  
   try {
-    const response = await fetch(QUERY_URL + "?query=" + encodeURIComponent(query));
-    if (!response.ok) {
-        throw new Error(`HTTP Error: ${response.status}`);
-    }
+    const response = await fetch(url);
+    if (!response.ok) throw new Error("HTTP Error: " + response.status);
     const data = await response.json();
     
     if (data.result) {
       return data.result.map(item => ({
         ...item,
-        id: item._id, // Mapear _id do Sanity para id local
-        date: new Date(item.date).toLocaleDateString('pt-BR', { day: 'numeric', month: 'short', year: 'numeric' })
+        id: item._id,
+        image: item.imageUrl || item.image || "https://images.unsplash.com/photo-1555881400-74d7acaacd81?auto=format&fit=crop&q=80&w=1000",
+        date: new Date(item._createdAt).toLocaleDateString('pt-BR', { day: 'numeric', month: 'short', year: 'numeric' })
       }));
     }
     return [];
   } catch (error) {
-    console.warn("Aviso: Não foi possível conectar ao Sanity (Provável bloqueio de CORS ou API Indisponível).", error.message);
+    console.warn("Aviso: Falha ao carregar API Sanity.", error.message);
     throw error;
   }
 };
@@ -689,6 +678,7 @@ export default function App() {
     </div>
   );
 }
+
 
 
 
