@@ -5,7 +5,8 @@ import { Menu, Search, X, ChevronRight, Clock, User, Share2, MessageCircle, Tren
 const PROJECT_ID = 'hun2hrsa';
 const DATASET = 'production';
 const API_VERSION = '2024-03-01';
-
+// ADICIONE ESTA LINHA PARA LER O TOKEN DA VERCEL:
+const SANITY_TOKEN = import.meta.env.VITE_SANITY_API_WRITE_TOKEN || '';
 // URL Pública para LEITURA (Não precisa de token)
 const QUERY_URL = `https://${PROJECT_ID}.api.sanity.io/v${API_VERSION}/data/query/${DATASET}`;
 // URL para ESCRITA (Precisa de token)
@@ -688,6 +689,7 @@ export default function App() {
     </div>
   );
 }
+
 
 
 
