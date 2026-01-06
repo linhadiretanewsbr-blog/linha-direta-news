@@ -1,53 +1,73 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
-  Menu, Search, X, ChevronRight, Clock, User, Share2, TrendingUp, Lock,
-  Plus, Save, Edit, Trash2, LogOut, RefreshCw, AlertCircle, WifiOff, XCircle
-} from 'lucide-react';
+  Menu,
+  Search,
+  X,
+  ChevronRight,
+  Clock,
+  User,
+  Share2,
+  TrendingUp,
+  Lock,
+  Plus,
+  Save,
+  Edit,
+  Trash2,
+  LogOut,
+  RefreshCw,
+  AlertCircle,
+  WifiOff,
+  XCircle
+} from "lucide-react";
 
 // --- CONFIGURAÇÃO SANITY ---
-const PROJECT_ID = 'hun2hrsa';
-const DATASET = 'production';
-const API_VERSION = '2024-03-01';
+const PROJECT_ID = "hun2hrsa";
+const DATASET = "production";
+const API_VERSION = "2024-03-01";
 
 // NÃO usar token no navegador (segurança)
-const SANITY_TOKEN = '';
+const SANITY_TOKEN = "";
 
-// URL pública para LEITURA (não precisa de token)
+// URL Pública para LEITURA (Não precisa de token)
 const QUERY_URL = `https://${PROJECT_ID}.api.sanity.io/v${API_VERSION}/data/query/${DATASET}`;
-// URL para ESCRITA (token somente via backend; aqui fica desativado)
-const MUTATE_URL = `https://${PROJECT_ID}.api.sanity.io/v${API_VERSION}/data/mutate/${DATASET}`;
 
-// --- DADOS DE FALLBACK (quando API falhar/CORS) ---
+// --- DADOS DE FALLBACK (Para quando a API falhar/CORS) ---
 const FALLBACK_NEWS = [
   {
-    id: 'local-1',
+    id: "local-1",
     title: "Brasil assume liderança estratégica em acordo comercial (Modo Demo)",
-    excerpt: "Este é um dado local exibido porque a conexão com o Sanity falhou. Configure o CORS no seu painel Sanity para ver dados reais.",
-    content: "Conteúdo de demonstração ativo. A conexão com a API falhou, provavelmente devido a restrições de CORS (Cross-Origin Resource Sharing). Para corrigir: Vá ao painel do Sanity > API > CORS Origins e adicione a URL do seu site.",
+    excerpt:
+      "Este é um dado local exibido porque a conexão com o Sanity falhou. Configure o CORS no seu painel Sanity para ver dados reais.",
+    content:
+      "Conteúdo de demonstração ativo. A conexão com a API falhou, provavelmente devido a restrições de CORS (Cross-Origin Resource Sharing). Para corrigir: Vá ao painel do Sanity > API > CORS Origins e adicione a URL do seu site.",
     category: "Geopolítica",
     author: "Sistema Local",
-    date: new Date().toLocaleDateString('pt-BR'),
-    image: "https://images.unsplash.com/photo-1555881400-74d7acaacd81?auto=format&fit=crop&q=80&w=1000"
+    date: new Date().toLocaleDateString("pt-BR"),
+    image:
+      "https://images.unsplash.com/photo-1555881400-74d7acaacd81?auto=format&fit=crop&q=80&w=1000"
   },
   {
-    id: 'local-2',
+    id: "local-2",
     title: "Mercados reagem positivamente às novas diretrizes econômicas",
-    excerpt: "Exemplo de notícia de economia carregada localmente para preservar o layout.",
+    excerpt:
+      "Exemplo de notícia de economia carregada localmente para preservar o layout.",
     content: "Texto simulado para preenchimento de layout.",
     category: "Economia",
     author: "Redação LDN",
-    date: new Date().toLocaleDateString('pt-BR'),
-    image: "https://images.unsplash.com/photo-1611974765270-ca1258634369?auto=format&fit=crop&q=80&w=1000"
+    date: new Date().toLocaleDateString("pt-BR"),
+    image:
+      "https://images.unsplash.com/photo-1611974765270-ca1258634369?auto=format&fit=crop&q=80&w=1000"
   },
   {
-    id: 'local-3',
+    id: "local-3",
     title: "Avanços na legislação digital prometem mais segurança",
     excerpt: "Política de tecnologia em foco no congresso nacional.",
     content: "Texto simulado para preenchimento de layout.",
     category: "Política",
     author: "Brasília Repórter",
-    date: new Date().toLocaleDateString('pt-BR'),
-    image: "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&q=80&w=1000"
+    date: new Date().toLocaleDateString("pt-BR"),
+    image:
+      "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&q=80&w=1000"
   }
 ];
 
@@ -55,11 +75,12 @@ const FALLBACK_NEWS = [
 const LOGO_URL = "https://placehold.co/200x200/1B5E20/FFD700?text=LDN";
 const CATEGORIES = ["Todas", "Política", "Geopolítica", "Economia", "Brasil", "Mundo"];
 
-// --- HELPERS SANITY ---
-// 1) Público: busca notícias publicadas
+// --- HELPERS DA API SANITY ---
+
+// 1. Buscar Notícias (Público)
 const fetchSanityNews = async () => {
-  const groq = '*[_type == "news"] | order(_createdAt desc)';
-  const url = `${QUERY_URL}?query=${encodeURIComponent(groq)}`;
+  const query = '*[_type == "news"] | order(_createdAt desc)';
+  const url = `${QUERY_URL}?query=${encodeURIComponent(query)}`;
 
   const response = await fetch(url);
   if (!response.ok) throw new Error("HTTP Error: " + response.status);
@@ -67,24 +88,30 @@ const fetchSanityNews = async () => {
   const data = await response.json();
 
   if (data.result) {
-    return data.result.map(item => ({
+    return data.result.map((item) => ({
       ...item,
       id: item._id,
-      image: item.imageUrl || item.image || "https://images.unsplash.com/photo-1555881400-74d7acaacd81?auto=format&fit=crop&q=80&w=1000",
-      date: new Date(item._createdAt).toLocaleDateString('pt-BR', { day: 'numeric', month: 'short', year: 'numeric' })
+      image:
+        item.imageUrl ||
+        item.image ||
+        "https://images.unsplash.com/photo-1555881400-74d7acaacd81?auto=format&fit=crop&q=80&w=1000",
+      date: new Date(item._createdAt).toLocaleDateString("pt-BR", {
+        day: "numeric",
+        month: "short",
+        year: "numeric"
+      })
     }));
   }
+
   return [];
 };
 
-// 2) Salvar (desativado no front — exige backend com token)
+// CRUD no front desativado (segurança)
 const saveSanityNews = async () => {
-  throw new Error("Salvar está desativado no front-end por segurança. Faça via API serverless.");
+  throw new Error("Publicar/editar foi desativado no front-end por segurança (token não roda no navegador).");
 };
-
-// 3) Deletar (desativado no front — exige backend com token)
 const deleteSanityNews = async () => {
-  throw new Error("Excluir está desativado no front-end por segurança. Faça via API serverless.");
+  throw new Error("Excluir foi desativado no front-end por segurança (token não roda no navegador).");
 };
 
 // --- COMPONENTES ---
@@ -111,7 +138,14 @@ const Header = ({ activeCategory, setActiveCategory, isMenuOpen, setIsMenuOpen, 
   <header className="sticky top-0 z-50 bg-white border-b-4 border-[#1B5E20] shadow-md">
     <div className="bg-[#1B5E20] text-white py-1 px-4 text-xs font-medium flex justify-between items-center">
       <span>Linha Direta News Brasil - Análise Política e Geopolítica</span>
-      <span>{new Date().toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
+      <span>
+        {new Date().toLocaleDateString("pt-BR", {
+          weekday: "long",
+          year: "numeric",
+          month: "long",
+          day: "numeric"
+        })}
+      </span>
     </div>
 
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -119,7 +153,7 @@ const Header = ({ activeCategory, setActiveCategory, isMenuOpen, setIsMenuOpen, 
         <Logo onClick={goHome} />
 
         <nav className="hidden md:flex space-x-6">
-          {view === 'admin' ? (
+          {view === "admin" ? (
             <span className="text-red-600 font-bold flex items-center">
               <Lock className="w-4 h-4 mr-1" /> MODO ADMINISTRADOR
             </span>
@@ -127,7 +161,10 @@ const Header = ({ activeCategory, setActiveCategory, isMenuOpen, setIsMenuOpen, 
             CATEGORIES.slice(0, 5).map((cat) => (
               <button
                 key={cat}
-                onClick={() => { setActiveCategory(cat); goHome(); }}
+                onClick={() => {
+                  setActiveCategory(cat);
+                  goHome();
+                }}
                 className={`px-3 py-2 text-sm font-bold uppercase tracking-wide transition-all border-b-2 ${
                   activeCategory === cat
                     ? "text-[#1B5E20] border-[#FFD700]"
@@ -152,7 +189,10 @@ const Header = ({ activeCategory, setActiveCategory, isMenuOpen, setIsMenuOpen, 
         </div>
 
         <div className="flex items-center md:hidden">
-          <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="text-[#1B5E20] hover:text-green-800 focus:outline-none">
+          <button
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            className="text-[#1B5E20] hover:text-green-800 focus:outline-none"
+          >
             {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
         </div>
@@ -165,7 +205,11 @@ const Header = ({ activeCategory, setActiveCategory, isMenuOpen, setIsMenuOpen, 
           {CATEGORIES.map((cat) => (
             <button
               key={cat}
-              onClick={() => { setActiveCategory(cat); setIsMenuOpen(false); goHome(); }}
+              onClick={() => {
+                setActiveCategory(cat);
+                setIsMenuOpen(false);
+                goHome();
+              }}
               className={`block w-full text-left px-3 py-2 text-base font-bold uppercase ${
                 activeCategory === cat
                   ? "bg-green-50 text-[#1B5E20] border-l-4 border-[#FFD700]"
@@ -190,7 +234,7 @@ const Hero = ({ article, onClick }) => (
       src={article.image}
       alt={article.title}
       className="w-full h-full object-cover opacity-80 transition-transform duration-700 group-hover:scale-105 group-hover:opacity-60"
-      onError={(e) => (e.target.src = 'https://via.placeholder.com/800x400?text=Sem+Imagem')}
+      onError={(e) => (e.target.src = "https://via.placeholder.com/800x400?text=Sem+Imagem")}
     />
     <div className="absolute inset-0 bg-gradient-to-t from-[#000] via-transparent to-transparent flex flex-col justify-end p-6 sm:p-10">
       <span className="inline-block px-3 py-1 bg-[#FFD700] text-[#1B5E20] text-xs font-black uppercase tracking-wider mb-3 w-fit">
@@ -203,8 +247,12 @@ const Hero = ({ article, onClick }) => (
         {article.excerpt}
       </p>
       <div className="flex items-center text-[#FFD700] text-sm space-x-4 font-medium">
-        <div className="flex items-center"><User className="w-4 h-4 mr-1" /> {article.author}</div>
-        <div className="flex items-center border-l border-gray-600 pl-4"><Clock className="w-4 h-4 mr-1" /> {article.date}</div>
+        <div className="flex items-center">
+          <User className="w-4 h-4 mr-1" /> {article.author}
+        </div>
+        <div className="flex items-center border-l border-gray-600 pl-4">
+          <Clock className="w-4 h-4 mr-1" /> {article.date}
+        </div>
       </div>
     </div>
   </div>
@@ -220,18 +268,22 @@ const ArticleCard = ({ article, onClick }) => (
         src={article.image}
         alt={article.title}
         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-        onError={(e) => (e.target.src = 'https://via.placeholder.com/400x200?text=Sem+Imagem')}
+        onError={(e) => (e.target.src = "https://via.placeholder.com/400x200?text=Sem+Imagem")}
       />
       <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#FFD700]"></div>
     </div>
     <div className="p-5 flex flex-col flex-grow">
       <div className="flex justify-between items-start mb-2">
-        <span className="text-xs font-bold text-[#1B5E20] uppercase tracking-wider">{article.category}</span>
+        <span className="text-xs font-bold text-[#1B5E20] uppercase tracking-wider">
+          {article.category}
+        </span>
       </div>
       <h3 className="text-xl font-bold text-gray-900 mb-2 line-clamp-3 group-hover:text-[#1B5E20] transition-colors leading-tight">
         {article.title}
       </h3>
-      <p className="text-gray-600 text-sm line-clamp-3 mb-4 flex-grow font-serif">{article.excerpt}</p>
+      <p className="text-gray-600 text-sm line-clamp-3 mb-4 flex-grow font-serif">
+        {article.excerpt}
+      </p>
       <div className="flex items-center justify-between text-xs text-gray-500 mt-auto pt-4 border-t border-gray-100">
         <span>{article.date}</span>
         <span className="flex items-center text-[#1B5E20] font-bold uppercase text-[10px]">
@@ -253,18 +305,22 @@ const ArticleDetail = ({ article, onBack }) => (
     <article className="bg-white shadow-lg border-t-8 border-[#1B5E20]">
       <div className="p-8 sm:p-12">
         <div className="flex items-center space-x-2 mb-6">
-          <span className="bg-[#1B5E20] text-white px-3 py-1 text-xs font-bold uppercase">{article.category}</span>
+          <span className="bg-[#1B5E20] text-white px-3 py-1 text-xs font-bold uppercase">
+            {article.category}
+          </span>
           <span className="text-gray-400 text-sm">|</span>
           <span className="text-gray-500 text-sm font-medium">{article.date}</span>
         </div>
-        <h1 className="text-4xl sm:text-5xl font-extrabold text-gray-900 leading-tight mb-6">{article.title}</h1>
+        <h1 className="text-4xl sm:text-5xl font-extrabold text-gray-900 leading-tight mb-6">
+          {article.title}
+        </h1>
         <p className="text-xl text-gray-600 font-serif leading-relaxed mb-8 border-l-4 border-[#FFD700] pl-4 italic">
           {article.excerpt}
         </p>
         <div className="flex items-center justify-between border-y border-gray-100 py-4 mb-8">
           <div className="flex items-center">
             <div className="w-10 h-10 bg-[#1B5E20] rounded-full flex items-center justify-center text-[#FFD700] font-bold mr-3">
-              {article.author ? article.author.charAt(0) : 'L'}
+              {article.author ? article.author.charAt(0) : "L"}
             </div>
             <div>
               <p className="font-bold text-gray-900 text-sm">Por {article.author}</p>
@@ -278,16 +334,22 @@ const ArticleDetail = ({ article, onBack }) => (
           </div>
         </div>
         <div className="prose prose-lg max-w-none text-gray-800 leading-relaxed font-serif">
-          {article.content
-            ? article.content.split('\n').map((paragraph, idx) => <p key={idx} className="mb-6">{paragraph}</p>)
-            : <p>Conteúdo indisponível.</p>}
+          {article.content ? (
+            article.content.split("\n").map((paragraph, idx) => (
+              <p key={idx} className="mb-6">
+                {paragraph}
+              </p>
+            ))
+          ) : (
+            <p>Conteúdo indisponível.</p>
+          )}
         </div>
       </div>
     </article>
   </div>
 );
 
-// --- LOGIN ADMIN (senha) ---
+// --- LOGIN (senha) ---
 const LoginScreen = ({ onLogin }) => {
   const [password, setPassword] = useState("");
   const [showHelp, setShowHelp] = useState(false);
@@ -304,9 +366,6 @@ const LoginScreen = ({ onLogin }) => {
         <h2 className="text-2xl font-bold text-[#1B5E20] mb-2 flex items-center">
           <Lock className="w-6 h-6 mr-2" /> Admin (Senha)
         </h2>
-        <p className="text-gray-500 text-sm mb-6">
-          Acesso restrito ao painel.
-        </p>
 
         <form onSubmit={handleAuth} className="space-y-4">
           <div>
@@ -333,7 +392,10 @@ const LoginScreen = ({ onLogin }) => {
             </div>
           )}
 
-          <button type="submit" className="w-full bg-[#1B5E20] text-white py-2 rounded font-bold hover:bg-green-800 transition-colors">
+          <button
+            type="submit"
+            className="w-full bg-[#1B5E20] text-white py-2 rounded font-bold hover:bg-green-800 transition-colors"
+          >
             Acessar Painel
           </button>
         </form>
@@ -342,7 +404,7 @@ const LoginScreen = ({ onLogin }) => {
   );
 };
 
-// --- PAINEL ADMIN (somente listagem por enquanto) ---
+// --- PAINEL ADMIN (listagem + badge rascunho) ---
 const AdminPanel = ({ news, onLogout, refreshNews }) => {
   const [loading, setLoading] = useState(false);
 
@@ -368,16 +430,16 @@ const AdminPanel = ({ news, onLogout, refreshNews }) => {
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-xl font-bold text-gray-800">Notícias ({news.length})</h3>
           <button onClick={handleRefresh} className="text-blue-600 hover:bg-blue-50 p-2 rounded-full" title="Atualizar">
-            <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-5 h-5 ${loading ? "animate-spin" : ""}`} />
           </button>
         </div>
 
         <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2">
-          {news.map(item => (
+          {news.map((item) => (
             <div key={item.id} className="flex flex-col sm:flex-row justify-between items-start border-b pb-4">
               <div className="mb-2 sm:mb-0">
                 <h4 className="font-bold text-gray-800 text-sm line-clamp-1 flex items-center">
-                  {item.id?.toString().startsWith('local-') && (
+                  {item.id?.toString().startsWith("local-") && (
                     <span className="bg-yellow-200 text-yellow-800 text-[10px] px-1 rounded mr-2">DEMO</span>
                   )}
                   {item.isDraft && (
@@ -385,7 +447,9 @@ const AdminPanel = ({ news, onLogout, refreshNews }) => {
                   )}
                   {item.title}
                 </h4>
-                <p className="text-xs text-gray-500">{item.date} • {item.category}</p>
+                <p className="text-xs text-gray-500">
+                  {item.date} • {item.category}
+                </p>
               </div>
 
               <div className="flex items-center space-x-1 opacity-60">
@@ -401,7 +465,7 @@ const AdminPanel = ({ news, onLogout, refreshNews }) => {
         </div>
 
         <p className="text-xs text-gray-500 mt-4">
-          Observação: editar/excluir/publicar via front-end está desativado por segurança (token não roda no navegador).
+          Publicar/editar/excluir via front-end está desativado por segurança (token não roda no navegador).
         </p>
       </div>
     </div>
@@ -419,20 +483,18 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [usingFallback, setUsingFallback] = useState(false);
 
-  // Senha do admin (CRON_SECRET)
+  // senha do admin (CRON_SECRET)
   const [adminToken, setAdminToken] = useState(null);
 
-  // Favicon
   useEffect(() => {
-    const link = document.querySelector("link[rel*='icon']") || document.createElement('link');
-    link.type = 'image/jpeg';
-    link.rel = 'shortcut icon';
+    const link = document.querySelector("link[rel*='icon']") || document.createElement("link");
+    link.type = "image/jpeg";
+    link.rel = "shortcut icon";
     link.href = LOGO_URL;
-    document.getElementsByTagName('head')[0].appendChild(link);
+    document.getElementsByTagName("head")[0].appendChild(link);
     document.title = "Linha Direta News | LDN";
   }, []);
 
-  // Admin: busca via endpoint interno /api/admin-news (precisa existir no repo)
   const fetchSanityNewsAdmin = async () => {
     const url = "/api/admin-news?secret=" + encodeURIComponent(adminToken || "");
     const response = await fetch(url);
@@ -441,18 +503,25 @@ export default function App() {
     const data = await response.json();
 
     if (data.result) {
-      return data.result.map(item => ({
+      return data.result.map((item) => ({
         ...item,
         id: item._id,
         isDraft: item._id?.startsWith("drafts."),
-        image: item.imageUrl || item.image || "https://images.unsplash.com/photo-1555881400-74d7acaacd81?auto=format&fit=crop&q=80&w=1000",
-        date: new Date(item._createdAt).toLocaleDateString('pt-BR', { day: 'numeric', month: 'short', year: 'numeric' })
+        image:
+          item.imageUrl ||
+          item.image ||
+          "https://images.unsplash.com/photo-1555881400-74d7acaacd81?auto=format&fit=crop&q=80&w=1000",
+        date: new Date(item._createdAt).toLocaleDateString("pt-BR", {
+          day: "numeric",
+          month: "short",
+          year: "numeric"
+        })
       }));
     }
+
     return [];
   };
 
-  // Carrega notícias (público ou admin)
   const loadNews = async (forceAdmin = false) => {
     setLoading(true);
     setUsingFallback(false);
@@ -476,7 +545,7 @@ export default function App() {
   const handleGoHome = () => {
     setView("home");
     setSelectedArticle(null);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const handleAdminLogin = async (password) => {
@@ -485,7 +554,7 @@ export default function App() {
     await loadNews(true);
   };
 
-  const filteredNews = activeCategory === "Todas" ? news : news.filter(n => n.category === activeCategory);
+  const filteredNews = activeCategory === "Todas" ? news : news.filter((n) => n.category === activeCategory);
   const featuredArticle = filteredNews[0];
   const gridArticles = filteredNews.slice(1);
 
@@ -508,21 +577,24 @@ export default function App() {
       />
 
       <main className="flex-grow">
-        {view === 'login' && <LoginScreen onLogin={handleAdminLogin} />}
+        {view === "login" && <LoginScreen onLogin={handleAdminLogin} />}
 
-        {view === 'admin' && (
+        {view === "admin" && (
           <AdminPanel
             news={news}
-            onLogout={() => { setAdminToken(null); handleGoHome(); }}
+            onLogout={() => {
+              setAdminToken(null);
+              handleGoHome();
+            }}
             refreshNews={loadNews}
           />
         )}
 
-        {view === 'article' && selectedArticle && (
+        {view === "article" && selectedArticle && (
           <ArticleDetail article={selectedArticle} onBack={handleGoHome} />
         )}
 
-        {view === 'home' && (
+        {view === "home" && (
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             {loading ? (
               <div className="flex justify-center py-20">
@@ -537,12 +609,13 @@ export default function App() {
                       <ChevronRight className="w-3 h-3" />
                       <span className="text-[#1B5E20]">{activeCategory}</span>
                     </div>
+
                     <Hero
                       article={featuredArticle}
                       onClick={(article) => {
                         setSelectedArticle(article);
                         setView("article");
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                        window.scrollTo({ top: 0, behavior: "smooth" });
                       }}
                     />
                   </div>
@@ -558,15 +631,16 @@ export default function App() {
                       <div className="w-2 h-8 bg-[#1B5E20] mr-3"></div>
                       <h3 className="text-2xl font-bold text-gray-900">Feed de Notícias</h3>
                     </div>
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                      {gridArticles.map(article => (
+                      {gridArticles.map((article) => (
                         <ArticleCard
                           key={article.id}
                           article={article}
-                          onClick={(article) => {
-                            setSelectedArticle(article);
+                          onClick={(a) => {
+                            setSelectedArticle(a);
                             setView("article");
-                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                            window.scrollTo({ top: 0, behavior: "smooth" });
                           }}
                         />
                       ))}
@@ -577,8 +651,14 @@ export default function App() {
                     <div className="bg-[#1B5E20] p-8 text-center text-white shadow-xl border-t-4 border-[#FFD700]">
                       <h3 className="font-bold text-2xl mb-2">Linha Direta</h3>
                       <p className="text-green-100 text-sm mb-6">Receba nossa análise diária de inteligência geopolítica.</p>
-                      <input type="email" placeholder="Seu e-mail profissional" className="w-full px-4 py-3 bg-green-800 border border-green-700 text-white placeholder-green-300 mb-3 focus:outline-none focus:border-[#FFD700] text-sm" />
-                      <button className="w-full bg-[#FFD700] hover:bg-yellow-400 text-[#1B5E20] font-bold py-3 uppercase tracking-wide text-sm transition-colors">Assinar Agora</button>
+                      <input
+                        type="email"
+                        placeholder="Seu e-mail profissional"
+                        className="w-full px-4 py-3 bg-green-800 border border-green-700 text-white placeholder-green-300 mb-3 focus:outline-none focus:border-[#FFD700] text-sm"
+                      />
+                      <button className="w-full bg-[#FFD700] hover:bg-yellow-400 text-[#1B5E20] font-bold py-3 uppercase tracking-wide text-sm transition-colors">
+                        Assinar Agora
+                      </button>
                     </div>
 
                     <div className="bg-white border border-gray-200 p-6 shadow-sm">
@@ -590,12 +670,20 @@ export default function App() {
                         {news.slice(0, 3).map((item, i) => (
                           <li
                             key={item.id}
-                            onClick={() => { setSelectedArticle(item); setView("article"); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                            onClick={() => {
+                              setSelectedArticle(item);
+                              setView("article");
+                              window.scrollTo({ top: 0, behavior: "smooth" });
+                            }}
                             className="cursor-pointer group"
                           >
                             <div className="flex items-start space-x-4">
-                              <span className="text-3xl font-black text-gray-200 group-hover:text-[#FFD700] transition-colors leading-none">{i + 1}</span>
-                              <p className="text-sm font-medium text-gray-800 group-hover:text-[#1B5E20] leading-snug">{item.title}</p>
+                              <span className="text-3xl font-black text-gray-200 group-hover:text-[#FFD700] transition-colors leading-none">
+                                {i + 1}
+                              </span>
+                              <p className="text-sm font-medium text-gray-800 group-hover:text-[#1B5E20] leading-snug">
+                                {item.title}
+                              </p>
                             </div>
                           </li>
                         ))}
@@ -616,6 +704,7 @@ export default function App() {
               <h4 className="text-lg font-bold text-[#FFD700] mb-4">Linha Direta News</h4>
               <p className="text-green-100 text-sm leading-relaxed">Jornalismo independente focado na soberania nacional.</p>
             </div>
+
             <div>
               <h4 className="text-lg font-bold text-[#FFD700] mb-4">Editorial</h4>
               <ul className="space-y-2 text-sm text-green-100">
@@ -623,15 +712,17 @@ export default function App() {
                 <li>Geopolítica</li>
               </ul>
             </div>
+
             <div className="text-right">
               <button
-                onClick={() => setView('login')}
+                onClick={() => setView("login")}
                 className="text-xs text-green-700 hover:text-[#FFD700] transition-colors flex items-center justify-end w-full"
               >
                 <Lock className="w-3 h-3 mr-1" /> Acesso Administrativo
               </button>
             </div>
           </div>
+
           <div className="border-t border-green-800 pt-8 text-center text-xs text-green-400">
             <p>&copy; 2026 Linha Direta News.</p>
           </div>
