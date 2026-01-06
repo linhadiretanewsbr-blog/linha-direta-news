@@ -6,7 +6,7 @@ const PROJECT_ID = 'hun2hrsa';
 const DATASET = 'production';
 const API_VERSION = '2024-03-01';
 // ADICIONE ESTA LINHA PARA LER O TOKEN DA VERCEL:
-const SANITY_TOKEN = import.meta.env.VITE_SANITY_API_WRITE_TOKEN || '';
+const SANITY_TOKEN = ''; // não usar token no navegador (segurança)
 // URL Pública para LEITURA (Não precisa de token)
 const QUERY_URL = `https://${PROJECT_ID}.api.sanity.io/v${API_VERSION}/data/query/${DATASET}`;
 // URL para ESCRITA (Precisa de token)
@@ -52,28 +52,26 @@ const CATEGORIES = ["Todas", "Política", "Geopolítica", "Economia", "Brasil", 
 
 // --- HELPERS DA API SANITY ---
 
-// 1. Buscar Notícias (Leitura)
-const fetchSanityNews = async () => {
-  const url = "https://hun2hrsa.api.sanity.io/v2021-10-21/data/query/production?query=" + encodeURIComponent('*[_type == "news"] | order(_createdAt desc)');
-  
-  try {
-    const response = await fetch(url);
-    if (!response.ok) throw new Error("HTTP Error: " + response.status);
-    const data = await response.json();
-    
-    if (data.result) {
-      return data.result.map(item => ({
-        ...item,
-        id: item._id,
-        image: item.imageUrl || item.image || "https://images.unsplash.com/photo-1555881400-74d7acaacd81?auto=format&fit=crop&q=80&w=1000",
-        date: new Date(item._createdAt).toLocaleDateString('pt-BR', { day: 'numeric', month: 'short', year: 'numeric' })
-      }));
-    }
-    return [];
-  } catch (error) {
-    console.warn("Aviso: Falha ao carregar API Sanity.", error.message);
-    throw error;
+// 1B. Buscar Notícias (Admin: inclui RASCUNHOS) - via API interna segura
+const fetchSanityNewsAdmin = async () => {
+  const url = "/api/admin-news?secret=" + encodeURIComponent(adminToken || "");
+
+  const response = await fetch(url);
+  if (!response.ok) throw new Error("HTTP Error: " + response.status);
+
+  const data = await response.json();
+
+  if (data.result) {
+    return data.result.map(item => ({
+      ...item,
+      id: item._id,
+      isDraft: item._id?.startsWith("drafts."),
+      image: item.imageUrl || item.image || "https://images.unsplash.com/photo-1555881400-74d7acaacd81?auto=format&fit=crop&q=80&w=1000",
+      date: new Date(item._createdAt).toLocaleDateString('pt-BR', { day: 'numeric', month: 'short', year: 'numeric' })
+    }));
   }
+
+  return [];
 };
 
 // 2. Salvar Notícia (Criação ou Edição)
@@ -299,11 +297,11 @@ const LoginScreen = ({ onLogin }) => {
 
   const handleAuth = (e) => {
     e.preventDefault();
-    if (token.length > 20) {
-      onLogin(token);
-    } else {
-      alert("Por favor, insira um Token de API do Sanity válido.");
-    }
+    if (token.length >= 6) {
+  onLogin(token);
+} else {
+  alert("Digite sua senha (mínimo 6 caracteres).");
+}
   };
 
   return (
@@ -680,6 +678,7 @@ export default function App() {
     </div>
   );
 }
+
 
 
 
