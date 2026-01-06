@@ -62,7 +62,7 @@ const fetchSanityNews
     content,
     category,
     author,
-imageUrl: image,
+    "image": image,
     "date": _createdAt
   }`;
 
@@ -689,6 +689,7 @@ export default function App() {
     </div>
   );
 }
+
 
 
 
