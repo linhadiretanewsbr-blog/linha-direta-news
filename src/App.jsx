@@ -82,30 +82,31 @@ const saveSanityNews = async (article, token) => {
 
   const mutations = {
     mutations: [
-      isEdit ? {
-        patch: {
-          id: article.id,
-          set: {
-            title: article.title,
-            excerpt: article.excerpt,
-            content: article.content,
-            category: article.category,
-            author: article.author,
-imageUrl              : article.image
+      isEdit
+        ? {
+            patch: {
+              id: article.id,
+              set: {
+                title: article.title,
+                excerpt: article.excerpt,
+                content: article.content,
+                category: article.category,
+                author: article.author,
+                imageUrl: article.image
+              }
+            }
           }
-        }
-      } : {
-        create: {
-          _type: 'news',
-          title: article.title,
-          excerpt: article.excerpt,
-          content: article.content,
-          category: article.category,
-          author: article.author,
-          60
-            : article.image
-        }
-      }
+        : {
+            create: {
+              _type: 'news',
+              title: article.title,
+              excerpt: article.excerpt,
+              content: article.content,
+              category: article.category,
+              author: article.author,
+              imageUrl: article.image
+            }
+          }
     ]
   };
 
@@ -121,9 +122,10 @@ imageUrl              : article.image
   if (!response.ok) {
     throw new Error('Falha ao salvar no Sanity. Verifique seu Token e CORS.');
   }
-  
+
   return await response.json();
 };
+
 
 // 3. Deletar Notícia
 const deleteSanityNews = async (id, token) => {
@@ -678,6 +680,7 @@ export default function App() {
     </div>
   );
 }
+
 
 
 
