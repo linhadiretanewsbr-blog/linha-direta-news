@@ -124,7 +124,7 @@ imageUrl              : article.image
     method: 'POST',
     headers: {
       'Content-type': 'application/json',
-      'Authorization': `Bearer ${token}`
+      'Authorization': `Bearer ${SANITY_TOKEN}`
     },
     body: JSON.stringify(mutations)
   });
@@ -689,7 +689,6 @@ export default function App() {
     </div>
   );
 }
-
 
 
 
