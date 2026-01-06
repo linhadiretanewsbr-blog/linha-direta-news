@@ -234,7 +234,10 @@ const Hero = ({ article, onClick }) => (
       src={article.image}
       alt={article.title}
       className="w-full h-full object-cover opacity-80 transition-transform duration-700 group-hover:scale-105 group-hover:opacity-60"
-      onError={(e) => (e.target.src = "https://via.placeholder.com/800x400?text=Sem+Imagem")}
+      onError={(e) => {
+  e.currentTarget.onerror = null;
+  e.currentTarget.src = "/placeholder.jpg";
+}}
     />
     <div className="absolute inset-0 bg-gradient-to-t from-[#000] via-transparent to-transparent flex flex-col justify-end p-6 sm:p-10">
       <span className="inline-block px-3 py-1 bg-[#FFD700] text-[#1B5E20] text-xs font-black uppercase tracking-wider mb-3 w-fit">
@@ -268,7 +271,10 @@ const ArticleCard = ({ article, onClick }) => (
         src={article.image}
         alt={article.title}
         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-        onError={(e) => (e.target.src = "https://via.placeholder.com/400x200?text=Sem+Imagem")}
+        onError={(e) => {
+  e.currentTarget.onerror = null;
+  e.currentTarget.src = "/placeholder.jpg";
+}}
       />
       <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#FFD700]"></div>
     </div>
@@ -731,3 +737,4 @@ export default function App() {
     </div>
   );
 }
+
