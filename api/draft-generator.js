@@ -5,21 +5,34 @@ const client = createClient({
   dataset: 'production',
   useCdn: false,
   token: process.env.SANITY_API_WRITE_TOKEN,
-  apiVersion: '2026-01-07',
+  apiVersion: '2026-01-07', // YYYY-MM-DD
 });
 
 function makeBaseId(article) {
   const raw = (article?.url || article?.title || '').toString().toLowerCase();
+
   const cleaned = raw
     .replace(/^https?:\/\//, '')
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
-    .slice(0, 90);
+    .slice(0, 80);
 
-  return cleaned || `auto-${Date.now()}`;
+  // Sufixo simples pra reduzir colisão (sem precisar crypto)
+  const suffix = (article?.publishedAt || '')
+    .toString()
+    .replace(/[^0-9]/g, '')
+    .slice(0, 12);
+
+  const base = cleaned || `auto-${Date.now()}`;
+  return suffix ? `${base}-${suffix}` : base;
 }
 
 export default async function handler(req, res) {
+  // Opcional, mas ajuda a evitar execução por POST acidental
+  if (req.method !== 'GET') {
+    return res.status(405).json({ error: 'Method not allowed (use GET)' });
+  }
+
   const { secret } = req.query;
 
   // Proteção do endpoint (mantém)
@@ -37,36 +50,44 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Parâmetros (opcional, dá pra ajustar pela URL)
+    // Parâmetros (ajustáveis via URL)
     const q =
       req.query.q ||
       'geopolítica OR soberania OR "soberania nacional" OR "segurança nacional" OR China OR EUA OR Rússia';
+
     const lang = req.query.lang || 'pt';
     const country = req.query.country || 'br';
-    const max = req.query.max || '5';
+
+    const maxRaw = req.query.max ?? '5';
+    const max = Math.max(1, Math.min(10, parseInt(String(maxRaw), 10) || 5));
 
     const author = req.query.author || 'Redação LDN';
     const category = req.query.category || 'Geopolítica';
 
-    const gnewsUrl =
-      `https://gnews.io/api/v4/search?` +
-      `q=${encodeURIComponent(q)}` +
-      `&lang=${encodeURIComponent(lang)}` +
-      `&country=${encodeURIComponent(country)}` +
-      `&max=${encodeURIComponent(max)}` +
-      `&apikey=${encodeURIComponent(gnewsKey)};
+    // Monta URL corretamente (evita erro de aspas/concat)
+    const url = new URL('https://gnews.io/api/v4/search');
+    url.search = new URLSearchParams({
+      q: String(q),
+      lang: String(lang),
+      country: String(country),
+      max: String(max),
+      apikey: String(gnewsKey),
+    }).toString();
 
-    const response = await fetch(gnewsUrl);
+    const response = await fetch(url.toString());
 
     if (!response.ok) {
       const text = await response.text();
-      return res.status(500).json({ error: 'Erro ao buscar notícias no GNews', details: text });
+      return res.status(500).json({
+        error: 'Erro ao buscar notícias no GNews',
+        details: text,
+      });
     }
 
     const data = await response.json();
     const articles = data.articles || [];
 
-    if (articles.length === 0) {
+    if (!articles.length) {
       return res.status(200).json({ message: 'Nenhuma notícia encontrada' });
     }
 
@@ -88,7 +109,7 @@ export default async function handler(req, res) {
         publishedAt +
         sourceName;
 
-      // Seu schema real (pelo Vision) tem author/category/content
+      // Schema: author/category/content
       const doc = {
         _id: draftId,
         _type: 'news',
@@ -97,8 +118,13 @@ export default async function handler(req, res) {
         content,
       };
 
+      // Cria apenas se não existir
       const createdDoc = await client.createIfNotExists(doc);
-      createdDocs.push({ _id: createdDoc._id, title: article.title, url: article.url });
+      createdDocs.push({
+        _id: createdDoc._id,
+        title: article.title,
+        url: article.url,
+      });
     }
 
     return res.status(200).json({
