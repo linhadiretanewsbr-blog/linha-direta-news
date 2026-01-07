@@ -25,14 +25,21 @@ function makeBaseId(article) {
   return suffix ? `${base}-${suffix}` : base;
 }
 
+// _key precisa ser único dentro do array
+function key() {
+  return `${Date.now().toString(16)}${Math.random().toString(16).slice(2, 10)}`;
+}
+
 function toPortableText(text) {
   const contentText = String(text || '').trim();
+
   return [
     {
+      _key: key(),
       _type: 'block',
       style: 'normal',
       markDefs: [],
-      children: [{ _type: 'span', text: contentText, marks: [] }],
+      children: [{ _key: key(), _type: 'span', text: contentText, marks: [] }],
     },
   ];
 }
@@ -43,17 +50,22 @@ export default async function handler(req, res) {
   }
 
   const { secret } = req.query;
+
   if (!process.env.CRON_SECRET || secret !== process.env.CRON_SECRET) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
   const gnewsKey = process.env.GNEWS_API_KEY;
-  if (!gnewsKey) return res.status(500).json({ error: 'GNEWS_API_KEY não configurada' });
+  if (!gnewsKey) {
+    return res.status(500).json({ error: 'GNEWS_API_KEY não configurada' });
+  }
+
   if (!process.env.SANITY_API_WRITE_TOKEN) {
     return res.status(500).json({ error: 'SANITY_API_WRITE_TOKEN não configurada' });
   }
 
   try {
+    // Parâmetros ajustáveis via URL
     const q =
       req.query.q ||
       'geopolítica OR soberania OR "soberania nacional" OR "segurança nacional" OR China OR EUA OR Rússia';
@@ -66,6 +78,7 @@ export default async function handler(req, res) {
     const author = req.query.author || 'Redação LDN';
     const category = req.query.category || 'Geopolítica';
 
+    // Endpoint de search do GNews com q/lang/country/max/apikey [web:1]
     const url = new URL('https://gnews.io/api/v4/search');
     url.search = new URLSearchParams({
       q: String(q),
@@ -83,25 +96,31 @@ export default async function handler(req, res) {
 
     const data = await response.json();
     const articles = data.articles || [];
-    if (!articles.length) return res.status(200).json({ message: 'Nenhuma notícia encontrada' });
+
+    if (!articles.length) {
+      return res.status(200).json({ message: 'Nenhuma notícia encontrada' });
+    }
 
     const createdDocs = [];
 
     for (const article of articles) {
       if (!article?.title || !article?.url) continue;
 
-      const baseId = makeBaseId(article);
-
-      // muda o prefixo para não colidir com seus drafts antigos
-      const draftId = `drafts.news2-${baseId}`;
-
       const title = String(article.title).trim();
+      if (!title) continue;
+
       const excerpt = String(article.description || '').trim();
       const sourceUrl = String(article.url).trim();
       const sourceName = String(article.source?.name || '').trim() || undefined;
-      const publishedAt = article.publishedAt || new Date().toISOString();
+      const publishedAt = String(article.publishedAt || new Date().toISOString());
 
-      const contentText =
+      // ID de draft (prefixo drafts.)
+      // Obs: criar drafts com prefixo drafts. é o padrão do Sanity. [web:226][web:9]
+      const baseId = makeBaseId({ url: sourceUrl, title, publishedAt });
+      const draftId = `drafts.news-${baseId}`;
+
+      // Corpo inicial (editável no Studio)
+      const bodyText =
         (excerpt ? `${excerpt}\n\n` : '') +
         `Fonte: ${sourceUrl}\n` +
         (sourceName ? `Veículo: ${sourceName}\n` : '') +
@@ -110,15 +129,20 @@ export default async function handler(req, res) {
       const doc = {
         _id: draftId,
         _type: 'news',
+
         title,
         slug: { _type: 'slug', current: makeBaseId({ title }) },
+
         excerpt: excerpt || undefined,
         author,
         category,
+
         sourceUrl,
         sourceName,
         publishedAt,
-        body: toPortableText(contentText),
+
+        // Portable Text com _key para evitar "Missing keys"
+        body: toPortableText(bodyText),
       };
 
       const createdDoc = await client.createIfNotExists(doc);
