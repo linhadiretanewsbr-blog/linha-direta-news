@@ -355,22 +355,27 @@ const ArticleDetail = ({ article, onBack }) => (
         </div>
         <div className="prose prose-lg max-w-none text-gray-800 leading-relaxed font-serif">
           {article.image && (
-  <img
-    src={article.image}
-    alt={article.title}
-    className="w-full h-auto mb-8"
-    onError={(e) => {
-      e.currentTarget.onerror = null;
-      e.currentTarget.src = "/placeholder.jpg";
-    }}
-  />
-)}
+            <img
+              src={article.image}
+              alt={article.title}
+              className="w-full h-auto mb-8"
+              onError={(e) => {
+                e.currentTarget.onerror = null;
+                e.currentTarget.src = "/placeholder.jpg";
+              }}
+            />
+          )}
 
-{article?.body?.length ? (
-  <PortableText value={article.body} />
-) : (
-  <p>Conteúdo indisponível.</p>
-)}
+          {article?.body?.length ? (
+            <PortableText value={article.body} />
+          ) : (
+            <p>Conteúdo indisponível.</p>
+          )}
+        </div>
+      </div>
+    </article>
+  </div>
+);
 
 
 // --- LOGIN (senha) ---
