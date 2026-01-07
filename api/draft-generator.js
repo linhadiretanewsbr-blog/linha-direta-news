@@ -1,4 +1,5 @@
 import { createClient } from '@sanity/client';
+import { Readable } from 'node:stream';
 
 const client = createClient({
   projectId: 'hun2hrsa',
@@ -56,7 +57,6 @@ function toBriefPortableText({
   const blocks = [];
 
   blocks.push(block('CONTEXTO GNEWS (para IA)', 'h2'));
-
   blocks.push(block(`Título: ${title}`));
   blocks.push(block(`Resumo (GNews): ${excerpt || 'não informado'}`));
   blocks.push(block(`Categoria: ${category || 'não informado'}`));
@@ -67,9 +67,7 @@ function toBriefPortableText({
 
   blocks.push(block('Pontos confirmados (base GNews)', 'h3'));
   blocks.push(block(`Assunto: ${title}`, 'normal', { listItem: 'bullet', level: 1 }));
-  if (excerpt) {
-    blocks.push(block(`Resumo em 1 frase: ${excerpt}`, 'normal', { listItem: 'bullet', level: 1 }));
-  }
+  if (excerpt) blocks.push(block(`Resumo em 1 frase: ${excerpt}`, 'normal', { listItem: 'bullet', level: 1 }));
   blocks.push(block(`Link da fonte: ${sourceUrl}`, 'normal', { listItem: 'bullet', level: 1 }));
 
   blocks.push(block('COMANDO (cole no Gem)', 'h2'));
@@ -77,12 +75,30 @@ function toBriefPortableText({
     block(
       'Usando SOMENTE o “CONTEXTO GNEWS (para IA)” acima, escreva uma notícia completa e original em PT-BR (sem copiar frases). ' +
         'Se faltar informação, não invente: escreva “não informado”. ' +
-        'Depois, crie uma CAPA 16:9 usando o gerador de imagens do Gemini “Nano Banana Pro”. ' +
-        'Entregue: (1) PROMPT_NANO_BANANA_PRO (bem detalhado), (2) TEXTO_ALT da capa (1 frase), (3) 3 hashtags sugeridas, e inclua “Fonte: <URL>”.'
+        'IMAGEM: se existir “Imagem (URL)” no contexto, use a imagem da fonte como capa (não gerar por IA). ' +
+        'Entregue também ALT_CAPA (1 frase) e CRÉDITO no formato “Foto: <Veículo> (via GNews)”. ' +
+        'Finalize com “Fonte: <URL>”.'
     )
   );
 
   return blocks;
+}
+
+async function uploadCoverFromUrl(imageUrl, filenameHint) {
+  if (!imageUrl) return null;
+
+  const resp = await fetch(imageUrl);
+  if (!resp.ok || !resp.body) return null;
+
+  const asset = await client.assets.upload('image', Readable.fromWeb(resp.body), {
+    filename: filenameHint || 'cover.jpg',
+    contentType: resp.headers.get('content-type') || undefined,
+  });
+
+  return {
+    _type: 'image',
+    asset: { _type: 'reference', _ref: asset._id },
+  };
 }
 
 export default async function handler(req, res) {
@@ -144,14 +160,23 @@ export default async function handler(req, res) {
       const sourceUrl = String(article.url).trim();
       const sourceName = String(article.source?.name || '').trim() || undefined;
       const publishedAt = String(article.publishedAt || new Date().toISOString());
-      const imageUrl = String(article.image || '').trim() || undefined;
+      const imageUrl = String(article.image || '').trim() || undefined; // GNews image [web:548]
 
       const baseId = makeBaseId({ url: sourceUrl, title, publishedAt });
       const draftId = `drafts.news-${baseId}`;
 
+      // Sempre tentar capa
+      let coverImage = null;
+      try {
+        coverImage = await uploadCoverFromUrl(imageUrl, `news-${baseId}.jpg`);
+      } catch {
+        coverImage = null;
+      }
+
       const doc = {
         _id: draftId,
         _type: 'news',
+
         title,
         slug: { _type: 'slug', current: makeBaseId({ title }) },
 
@@ -163,7 +188,6 @@ export default async function handler(req, res) {
         sourceName,
         publishedAt,
 
-        // Novo: brief preenchido; body fica vazio para você escrever
         brief: toBriefPortableText({
           title,
           excerpt,
@@ -173,10 +197,12 @@ export default async function handler(req, res) {
           imageUrl,
           category,
         }),
+
+        ...(coverImage ? { coverImage } : {}),
       };
 
       const createdDoc = await client.createIfNotExists(doc);
-      createdDocs.push({ _id: createdDoc._id, title, url: sourceUrl });
+      createdDocs.push({ _id: createdDoc._id, title, url: sourceUrl, image: imageUrl });
     }
 
     return res.status(200).json({
