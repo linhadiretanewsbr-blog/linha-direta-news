@@ -21,7 +21,7 @@ import {
   XCircle
 } from "lucide-react";
 
-import SocialFeed from "./components/SocialFeed";
+import SocialFooter from "./components/SocialFooter";
 
 // --- CONFIGURAÇÃO SANITY ---
 const PROJECT_ID = "hun2hrsa";
@@ -658,7 +658,7 @@ export default function App() {
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
                   <div className="lg:col-span-2">
-                    <SocialFeed />
+                    
 
                     <div className="flex items-center mb-8 pb-2 border-b-2 border-gray-100">
                       <div className="w-2 h-8 bg-[#1B5E20] mr-3"></div>
@@ -730,37 +730,7 @@ export default function App() {
         )}
       </main>
 
-      <footer className="bg-[#0f3311] text-white py-12 border-t-4 border-[#FFD700]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
-            <div>
-              <h4 className="text-lg font-bold text-[#FFD700] mb-4">Linha Direta News</h4>
-              <p className="text-green-100 text-sm leading-relaxed">Jornalismo independente focado na soberania nacional.</p>
-            </div>
-
-            <div>
-              <h4 className="text-lg font-bold text-[#FFD700] mb-4">Editorial</h4>
-              <ul className="space-y-2 text-sm text-green-100">
-                <li>Política Nacional</li>
-                <li>Geopolítica</li>
-              </ul>
-            </div>
-
-            <div className="text-right">
-              <button
-                onClick={() => setView("login")}
-                className="text-xs text-green-700 hover:text-[#FFD700] transition-colors flex items-center justify-end w-full"
-              >
-                <Lock className="w-3 h-3 mr-1" /> Acesso Administrativo
-              </button>
-            </div>
-          </div>
-
-          <div className="border-t border-green-800 pt-8 text-center text-xs text-green-400">
-            <p>&copy; 2026 Linha Direta News.</p>
-          </div>
-        </div>
-      </footer>
+      <SocialFooter />
     </div>
   );
 }
