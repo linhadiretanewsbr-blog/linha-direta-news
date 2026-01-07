@@ -76,12 +76,13 @@ function toPortableTextContext({
 
   blocks.push(block('COMANDO (cole no Gem)', 'h2'));
   blocks.push(
-    block(
-      'Usando SOMENTE o “CONTEXTO GNEWS (para IA)” acima, escreva uma notícia completa e original em PT-BR (sem copiar frases). ' +
-        'Se faltar informação, não invente: escreva “não informado”. ' +
-        'No final, gere 2 prompts de capa (16:9) + 1 ALT text e inclua “Fonte: <URL>”.'
-    )
-  );
+  block(
+    'Usando SOMENTE o “CONTEXTO GNEWS (para IA)” acima, escreva uma notícia completa e original em PT-BR (sem copiar frases). ' +
+      'Se faltar informação, não invente: escreva “não informado”. ' +
+      'Depois, crie uma CAPA 16:9 usando o gerador de imagens do Gemini “Nano Banana Pro”. ' +
+      'Entregue: (1) PROMPT_NANO_BANANA_PRO (bem detalhado), (2) TEXTO_ALT da capa (1 frase), (3) 3 hashtags sugeridas, e inclua “Fonte: <URL>”.'
+  )
+);
 
   return blocks;
 }
