@@ -5,13 +5,13 @@ const client = createClient({
   dataset: 'production',
   useCdn: false,
   token: process.env.SANITY_API_WRITE_TOKEN,
-  apiVersion: '2024-03-01',
+  apiVersion: '2026-01-07',
 });
 
 function makeBaseId(article) {
   const raw = (article?.url || article?.title || '').toString().toLowerCase();
   const cleaned = raw
-    .replace(/https?:\/\//g, '')
+    .replace(/^https?:\/\//, '')
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
     .slice(0, 90);
@@ -22,25 +22,45 @@ function makeBaseId(article) {
 export default async function handler(req, res) {
   const { secret } = req.query;
 
-  // Verificar se o secret está correto
+  // Proteção do endpoint (mantém)
   if (!process.env.CRON_SECRET || secret !== process.env.CRON_SECRET) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
-  try {
-    // Buscar notícias da NewsAPI
-    const newsApiKey = process.env.NEWS_API_KEY;
-    if (!newsApiKey) {
-      return res.status(500).json({ error: 'NEWS_API_KEY não configurada' });
-    }
+  const gnewsKey = process.env.GNEWS_API_KEY;
+  if (!gnewsKey) {
+    return res.status(500).json({ error: 'GNEWS_API_KEY não configurada' });
+  }
 
-    const response = await fetch(
-      'https://newsapi.org/v2/everything?q=geopolitica+brasil&sortBy=publishedAt&language=pt&pageSize=5',
-      { headers: { 'X-Api-Key': newsApiKey } } // header suportado pela NewsAPI [web:141]
-    );
+  if (!process.env.SANITY_API_WRITE_TOKEN) {
+    return res.status(500).json({ error: 'SANITY_API_WRITE_TOKEN não configurada' });
+  }
+
+  try {
+    // Parâmetros (opcional, dá pra ajustar pela URL)
+    const q =
+      req.query.q ||
+      'geopolítica OR soberania OR "soberania nacional" OR "segurança nacional" OR China OR EUA OR Rússia';
+    const lang = req.query.lang || 'pt';
+    const country = req.query.country || 'br';
+    const max = req.query.max || '5';
+
+    const author = req.query.author || 'Redação LDN';
+    const category = req.query.category || 'Geopolítica';
+
+    const gnewsUrl =
+      `https://gnews.io/api/v4/search?` +
+      `q=${encodeURIComponent(q)}` +
+      `&lang=${encodeURIComponent(lang)}` +
+      `&country=${encodeURIComponent(country)}` +
+      `&max=${encodeURIComponent(max)}` +
+      `&token=${encodeURIComponent(gnewsKey)}`;
+
+    const response = await fetch(gnewsUrl);
 
     if (!response.ok) {
-      return res.status(500).json({ error: 'Erro ao buscar notícias' });
+      const text = await response.text();
+      return res.status(500).json({ error: 'Erro ao buscar notícias no GNews', details: text });
     }
 
     const data = await response.json();
@@ -50,45 +70,43 @@ export default async function handler(req, res) {
       return res.status(200).json({ message: 'Nenhuma notícia encontrada' });
     }
 
-    // Criar rascunhos no Sanity (drafts.)
     const createdDocs = [];
 
     for (const article of articles) {
-      if (!article?.title) continue;
+      if (!article?.title || !article?.url) continue;
 
       const baseId = makeBaseId(article);
       const draftId = `drafts.news-${baseId}`;
 
+      const description = (article.description || '').trim();
+      const sourceName = article.source?.name ? `Veículo: ${article.source.name}\n` : '';
+      const publishedAt = article.publishedAt ? `Publicado em: ${article.publishedAt}\n` : '';
+
+      const content =
+        `${description || article.title}\n\n` +
+        `Fonte: ${article.url}\n` +
+        publishedAt +
+        sourceName;
+
+      // Seu schema real (pelo Vision) tem author/category/content
       const doc = {
         _id: draftId,
         _type: 'news',
-        title: article.title,
-        excerpt: article.description || article.content || 'Notícia interessante',
-        content:
-          `Fonte: ${article.url || ''}\n\n` +
-          (article.content || article.description || ''),
-        category: 'Brasil',
-        author: article.author || 'Agência de Notícias',
-        source: article.source?.name || 'Fonte externa',
-        imageUrl: article.urlToImage || '',
-        publishedAt: article.publishedAt,
+        author,
+        category,
+        content,
       };
 
-      try {
-        const createdDoc = await client.createIfNotExists(doc);
-        createdDocs.push(createdDoc);
-      } catch (err) {
-        console.error('Erro ao criar documento:', err);
-      }
+      const createdDoc = await client.createIfNotExists(doc);
+      createdDocs.push({ _id: createdDoc._id, title: article.title, url: article.url });
     }
 
     return res.status(200).json({
       success: true,
       message: `${createdDocs.length} rascunho(s) criado(s)`,
-      articles: createdDocs,
+      drafts: createdDocs,
     });
   } catch (error) {
-    console.error('Erro no draft generator:', error);
-    return res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: String(error?.message || error) });
   }
 }
