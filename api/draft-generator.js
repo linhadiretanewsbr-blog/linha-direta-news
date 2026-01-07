@@ -30,18 +30,60 @@ function key() {
   return `${Date.now().toString(16)}${Math.random().toString(16).slice(2, 10)}`;
 }
 
-function toPortableText(text) {
-  const contentText = String(text || '').trim();
+function span(text) {
+  return { _key: key(), _type: 'span', text: String(text || ''), marks: [] };
+}
 
-  return [
-    {
-      _key: key(),
-      _type: 'block',
-      style: 'normal',
-      markDefs: [],
-      children: [{ _key: key(), _type: 'span', text: contentText, marks: [] }],
-    },
-  ];
+function block(text, style = 'normal', extra = {}) {
+  return {
+    _key: key(),
+    _type: 'block',
+    style,
+    markDefs: [],
+    children: [span(text)],
+    ...extra,
+  };
+}
+
+// Portable Text com heading + bullets (listItem: 'bullet')
+function toPortableTextContext({
+  title,
+  excerpt,
+  sourceUrl,
+  sourceName,
+  publishedAt,
+  imageUrl,
+  category,
+}) {
+  const blocks = [];
+
+  blocks.push(block('CONTEXTO GNEWS (para IA)', 'h2'));
+
+  blocks.push(block(`Título: ${title}`));
+  blocks.push(block(`Resumo (GNews): ${excerpt || 'não informado'}`));
+  blocks.push(block(`Categoria: ${category || 'não informado'}`));
+  blocks.push(block(`Veículo: ${sourceName || 'não informado'}`));
+  blocks.push(block(`Publicado em: ${publishedAt || 'não informado'}`));
+  blocks.push(block(`Fonte (URL): ${sourceUrl}`));
+  blocks.push(block(`Imagem (URL): ${imageUrl || 'não informado'}`));
+
+  blocks.push(block('Pontos confirmados (base GNews)', 'h3'));
+  blocks.push(block(`Assunto: ${title}`, 'normal', { listItem: 'bullet', level: 1 }));
+  if (excerpt) {
+    blocks.push(block(`Resumo em 1 frase: ${excerpt}`, 'normal', { listItem: 'bullet', level: 1 }));
+  }
+  blocks.push(block(`Link da fonte: ${sourceUrl}`, 'normal', { listItem: 'bullet', level: 1 }));
+
+  blocks.push(block('COMANDO (cole no Gem)', 'h2'));
+  blocks.push(
+    block(
+      'Usando SOMENTE o “CONTEXTO GNEWS (para IA)” acima, escreva uma notícia completa e original em PT-BR (sem copiar frases). ' +
+        'Se faltar informação, não invente: escreva “não informado”. ' +
+        'No final, gere 2 prompts de capa (16:9) + 1 ALT text e inclua “Fonte: <URL>”.'
+    )
+  );
+
+  return blocks;
 }
 
 export default async function handler(req, res) {
@@ -78,7 +120,7 @@ export default async function handler(req, res) {
     const author = req.query.author || 'Redação LDN';
     const category = req.query.category || 'Geopolítica';
 
-    // Endpoint de search do GNews com q/lang/country/max/apikey [web:1]
+    // Endpoint de search do GNews com q/lang/country/max/apikey
     const url = new URL('https://gnews.io/api/v4/search');
     url.search = new URLSearchParams({
       q: String(q),
@@ -89,6 +131,7 @@ export default async function handler(req, res) {
     }).toString();
 
     const response = await fetch(url.toString());
+
     if (!response.ok) {
       const text = await response.text();
       return res.status(500).json({ error: 'Erro ao buscar notícias no GNews', details: text });
@@ -113,18 +156,11 @@ export default async function handler(req, res) {
       const sourceUrl = String(article.url).trim();
       const sourceName = String(article.source?.name || '').trim() || undefined;
       const publishedAt = String(article.publishedAt || new Date().toISOString());
+      const imageUrl = String(article.image || '').trim() || undefined;
 
-      // ID de draft (prefixo drafts.)
-      // Obs: criar drafts com prefixo drafts. é o padrão do Sanity. [web:226][web:9]
+      // Draft id (prefixo drafts.)
       const baseId = makeBaseId({ url: sourceUrl, title, publishedAt });
       const draftId = `drafts.news-${baseId}`;
-
-      // Corpo inicial (editável no Studio)
-      const bodyText =
-        (excerpt ? `${excerpt}\n\n` : '') +
-        `Fonte: ${sourceUrl}\n` +
-        (sourceName ? `Veículo: ${sourceName}\n` : '') +
-        `Publicado em: ${publishedAt}`;
 
       const doc = {
         _id: draftId,
@@ -141,8 +177,16 @@ export default async function handler(req, res) {
         sourceName,
         publishedAt,
 
-        // Portable Text com _key para evitar "Missing keys"
-        body: toPortableText(bodyText),
+        // Template “pronto pra copiar e colar no Gem”
+        body: toPortableTextContext({
+          title,
+          excerpt,
+          sourceUrl,
+          sourceName,
+          publishedAt,
+          imageUrl,
+          category,
+        }),
       };
 
       const createdDoc = await client.createIfNotExists(doc);
