@@ -25,7 +25,6 @@ function makeBaseId(article) {
   return suffix ? `${base}-${suffix}` : base;
 }
 
-// _key precisa ser único dentro do array
 function key() {
   return `${Date.now().toString(16)}${Math.random().toString(16).slice(2, 10)}`;
 }
@@ -45,8 +44,7 @@ function block(text, style = 'normal', extra = {}) {
   };
 }
 
-// Portable Text com heading + bullets (listItem: 'bullet')
-function toPortableTextContext({
+function toBriefPortableText({
   title,
   excerpt,
   sourceUrl,
@@ -76,39 +74,33 @@ function toPortableTextContext({
 
   blocks.push(block('COMANDO (cole no Gem)', 'h2'));
   blocks.push(
-  block(
-    'Usando SOMENTE o “CONTEXTO GNEWS (para IA)” acima, escreva uma notícia completa e original em PT-BR (sem copiar frases). ' +
-      'Se faltar informação, não invente: escreva “não informado”. ' +
-      'Depois, crie uma CAPA 16:9 usando o gerador de imagens do Gemini “Nano Banana Pro”. ' +
-      'Entregue: (1) PROMPT_NANO_BANANA_PRO (bem detalhado), (2) TEXTO_ALT da capa (1 frase), (3) 3 hashtags sugeridas, e inclua “Fonte: <URL>”.'
-  )
-);
+    block(
+      'Usando SOMENTE o “CONTEXTO GNEWS (para IA)” acima, escreva uma notícia completa e original em PT-BR (sem copiar frases). ' +
+        'Se faltar informação, não invente: escreva “não informado”. ' +
+        'Depois, crie uma CAPA 16:9 usando o gerador de imagens do Gemini “Nano Banana Pro”. ' +
+        'Entregue: (1) PROMPT_NANO_BANANA_PRO (bem detalhado), (2) TEXTO_ALT da capa (1 frase), (3) 3 hashtags sugeridas, e inclua “Fonte: <URL>”.'
+    )
+  );
 
   return blocks;
 }
 
 export default async function handler(req, res) {
-  if (req.method !== 'GET') {
-    return res.status(405).json({ error: 'Method not allowed (use GET)' });
-  }
+  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed (use GET)' });
 
   const { secret } = req.query;
-
   if (!process.env.CRON_SECRET || secret !== process.env.CRON_SECRET) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
   const gnewsKey = process.env.GNEWS_API_KEY;
-  if (!gnewsKey) {
-    return res.status(500).json({ error: 'GNEWS_API_KEY não configurada' });
-  }
+  if (!gnewsKey) return res.status(500).json({ error: 'GNEWS_API_KEY não configurada' });
 
   if (!process.env.SANITY_API_WRITE_TOKEN) {
     return res.status(500).json({ error: 'SANITY_API_WRITE_TOKEN não configurada' });
   }
 
   try {
-    // Parâmetros ajustáveis via URL
     const q =
       req.query.q ||
       'geopolítica OR soberania OR "soberania nacional" OR "segurança nacional" OR China OR EUA OR Rússia';
@@ -121,7 +113,6 @@ export default async function handler(req, res) {
     const author = req.query.author || 'Redação LDN';
     const category = req.query.category || 'Geopolítica';
 
-    // Endpoint de search do GNews com q/lang/country/max/apikey
     const url = new URL('https://gnews.io/api/v4/search');
     url.search = new URLSearchParams({
       q: String(q),
@@ -132,7 +123,6 @@ export default async function handler(req, res) {
     }).toString();
 
     const response = await fetch(url.toString());
-
     if (!response.ok) {
       const text = await response.text();
       return res.status(500).json({ error: 'Erro ao buscar notícias no GNews', details: text });
@@ -140,10 +130,7 @@ export default async function handler(req, res) {
 
     const data = await response.json();
     const articles = data.articles || [];
-
-    if (!articles.length) {
-      return res.status(200).json({ message: 'Nenhuma notícia encontrada' });
-    }
+    if (!articles.length) return res.status(200).json({ message: 'Nenhuma notícia encontrada' });
 
     const createdDocs = [];
 
@@ -159,14 +146,12 @@ export default async function handler(req, res) {
       const publishedAt = String(article.publishedAt || new Date().toISOString());
       const imageUrl = String(article.image || '').trim() || undefined;
 
-      // Draft id (prefixo drafts.)
       const baseId = makeBaseId({ url: sourceUrl, title, publishedAt });
       const draftId = `drafts.news-${baseId}`;
 
       const doc = {
         _id: draftId,
         _type: 'news',
-
         title,
         slug: { _type: 'slug', current: makeBaseId({ title }) },
 
@@ -178,8 +163,8 @@ export default async function handler(req, res) {
         sourceName,
         publishedAt,
 
-        // Template “pronto pra copiar e colar no Gem”
-        body: toPortableTextContext({
+        // Novo: brief preenchido; body fica vazio para você escrever
+        brief: toBriefPortableText({
           title,
           excerpt,
           sourceUrl,
