@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { PortableText } from "@portabletext/react";
 import {
   Menu,
   Search,
@@ -750,5 +751,6 @@ export default function App() {
     </div>
   );
 }
+
 
 
