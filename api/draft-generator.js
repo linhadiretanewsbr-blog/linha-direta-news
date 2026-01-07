@@ -5,19 +5,17 @@ const client = createClient({
   dataset: 'production',
   useCdn: false,
   token: process.env.SANITY_API_WRITE_TOKEN,
-  apiVersion: '2026-01-07', // YYYY-MM-DD
+  apiVersion: '2026-01-07',
 });
 
 function makeBaseId(article) {
   const raw = (article?.url || article?.title || '').toString().toLowerCase();
-
   const cleaned = raw
     .replace(/^https?:\/\//, '')
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
     .slice(0, 80);
 
-  // Sufixo simples pra reduzir colisão (sem precisar crypto)
   const suffix = (article?.publishedAt || '')
     .toString()
     .replace(/[^0-9]/g, '')
@@ -27,34 +25,38 @@ function makeBaseId(article) {
   return suffix ? `${base}-${suffix}` : base;
 }
 
+function toPortableText(text) {
+  const contentText = String(text || '').trim();
+  return [
+    {
+      _type: 'block',
+      style: 'normal',
+      markDefs: [],
+      children: [{ _type: 'span', text: contentText, marks: [] }],
+    },
+  ];
+}
+
 export default async function handler(req, res) {
-  // Opcional, mas ajuda a evitar execução por POST acidental
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed (use GET)' });
   }
 
   const { secret } = req.query;
-
-  // Proteção do endpoint (mantém)
   if (!process.env.CRON_SECRET || secret !== process.env.CRON_SECRET) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
   const gnewsKey = process.env.GNEWS_API_KEY;
-  if (!gnewsKey) {
-    return res.status(500).json({ error: 'GNEWS_API_KEY não configurada' });
-  }
-
+  if (!gnewsKey) return res.status(500).json({ error: 'GNEWS_API_KEY não configurada' });
   if (!process.env.SANITY_API_WRITE_TOKEN) {
     return res.status(500).json({ error: 'SANITY_API_WRITE_TOKEN não configurada' });
   }
 
   try {
-    // Parâmetros (ajustáveis via URL)
     const q =
       req.query.q ||
       'geopolítica OR soberania OR "soberania nacional" OR "segurança nacional" OR China OR EUA OR Rússia';
-
     const lang = req.query.lang || 'pt';
     const country = req.query.country || 'br';
 
@@ -64,7 +66,6 @@ export default async function handler(req, res) {
     const author = req.query.author || 'Redação LDN';
     const category = req.query.category || 'Geopolítica';
 
-    // Monta URL corretamente (evita erro de aspas/concat)
     const url = new URL('https://gnews.io/api/v4/search');
     url.search = new URLSearchParams({
       q: String(q),
@@ -75,21 +76,14 @@ export default async function handler(req, res) {
     }).toString();
 
     const response = await fetch(url.toString());
-
     if (!response.ok) {
       const text = await response.text();
-      return res.status(500).json({
-        error: 'Erro ao buscar notícias no GNews',
-        details: text,
-      });
+      return res.status(500).json({ error: 'Erro ao buscar notícias no GNews', details: text });
     }
 
     const data = await response.json();
     const articles = data.articles || [];
-
-    if (!articles.length) {
-      return res.status(200).json({ message: 'Nenhuma notícia encontrada' });
-    }
+    if (!articles.length) return res.status(200).json({ message: 'Nenhuma notícia encontrada' });
 
     const createdDocs = [];
 
@@ -97,34 +91,38 @@ export default async function handler(req, res) {
       if (!article?.title || !article?.url) continue;
 
       const baseId = makeBaseId(article);
-      const draftId = `drafts.news-${baseId}`;
 
-      const description = (article.description || '').trim();
-      const sourceName = article.source?.name ? `Veículo: ${article.source.name}\n` : '';
-      const publishedAt = article.publishedAt ? `Publicado em: ${article.publishedAt}\n` : '';
+      // muda o prefixo para não colidir com seus drafts antigos
+      const draftId = `drafts.news2-${baseId}`;
 
-      const content =
-        `${description || article.title}\n\n` +
-        `Fonte: ${article.url}\n` +
-        publishedAt +
-        sourceName;
+      const title = String(article.title).trim();
+      const excerpt = String(article.description || '').trim();
+      const sourceUrl = String(article.url).trim();
+      const sourceName = String(article.source?.name || '').trim() || undefined;
+      const publishedAt = article.publishedAt || new Date().toISOString();
 
-      // Schema: author/category/content
+      const contentText =
+        (excerpt ? `${excerpt}\n\n` : '') +
+        `Fonte: ${sourceUrl}\n` +
+        (sourceName ? `Veículo: ${sourceName}\n` : '') +
+        `Publicado em: ${publishedAt}`;
+
       const doc = {
         _id: draftId,
         _type: 'news',
+        title,
+        slug: { _type: 'slug', current: makeBaseId({ title }) },
+        excerpt: excerpt || undefined,
         author,
         category,
-        content,
+        sourceUrl,
+        sourceName,
+        publishedAt,
+        body: toPortableText(contentText),
       };
 
-      // Cria apenas se não existir
       const createdDoc = await client.createIfNotExists(doc);
-      createdDocs.push({
-        _id: createdDoc._id,
-        title: article.title,
-        url: article.url,
-      });
+      createdDocs.push({ _id: createdDoc._id, title, url: sourceUrl });
     }
 
     return res.status(200).json({
