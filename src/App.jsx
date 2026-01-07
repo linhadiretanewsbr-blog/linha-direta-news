@@ -354,20 +354,24 @@ const ArticleDetail = ({ article, onBack }) => (
           </div>
         </div>
         <div className="prose prose-lg max-w-none text-gray-800 leading-relaxed font-serif">
-          {article.content ? (
-            article.content.split("\n").map((paragraph, idx) => (
-              <p key={idx} className="mb-6">
-                {paragraph}
-              </p>
-            ))
-          ) : (
-            <p>Conteúdo indisponível.</p>
-          )}
-        </div>
-      </div>
-    </article>
-  </div>
-);
+          {article.image && (
+  <img
+    src={article.image}
+    alt={article.title}
+    className="w-full h-auto mb-8"
+    onError={(e) => {
+      e.currentTarget.onerror = null;
+      e.currentTarget.src = "/placeholder.jpg";
+    }}
+  />
+)}
+
+{article?.body?.length ? (
+  <PortableText value={article.body} />
+) : (
+  <p>Conteúdo indisponível.</p>
+)}
+
 
 // --- LOGIN (senha) ---
 const LoginScreen = ({ onLogin }) => {
@@ -751,6 +755,7 @@ export default function App() {
     </div>
   );
 }
+
 
 
 
