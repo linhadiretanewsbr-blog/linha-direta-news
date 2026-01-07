@@ -21,7 +21,7 @@ import {
   XCircle
 } from "lucide-react";
 
-import SocialFeed from "./componets/SocialFeed";
+import SocialFeed from "./components/SocialFeed";
 
 // --- CONFIGURAÇÃO SANITY ---
 const PROJECT_ID = "hun2hrsa";
@@ -662,6 +662,8 @@ export default function App() {
                       <div className="w-2 h-8 bg-[#1B5E20] mr-3"></div>
                       <h3 className="text-2xl font-bold text-gray-900">Feed de Notícias</h3>
                     </div>
+
+                    <SocialFeed /> {/* ← COLE AQUI */}
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                       {gridArticles.map((article) => (
