@@ -79,7 +79,17 @@ const CATEGORIES = ["Todas", "Política", "Geopolítica", "Economia", "Brasil", 
 
 // 1. Buscar Notícias (Público)
 const fetchSanityNews = async () => {
-  const query = '*[_type == "news"] | order(_createdAt desc)';
+  const query = `*[_type == "news"] | order(publishedAt desc){
+    _id,
+    title,
+    excerpt,
+    category,
+    author,
+    publishedAt,
+    body,
+    "coverImageUrl": coverImage.asset->url
+  }`;
+
   const url = `${QUERY_URL}?query=${encodeURIComponent(query)}`;
 
   const response = await fetch(url);
@@ -91,15 +101,18 @@ const fetchSanityNews = async () => {
     return data.result.map((item) => ({
       ...item,
       id: item._id,
+
       image:
-        item.imageUrl ||
-        item.image ||
+        item.coverImageUrl ||
         "https://images.unsplash.com/photo-1555881400-74d7acaacd81?auto=format&fit=crop&q=80&w=1000",
-      date: new Date(item._createdAt).toLocaleDateString("pt-BR", {
+
+      body: item.body || [],
+
+      date: new Date(item.publishedAt || item._createdAt || Date.now()).toLocaleDateString("pt-BR", {
         day: "numeric",
         month: "short",
-        year: "numeric"
-      })
+        year: "numeric",
+      }),
     }));
   }
 
@@ -737,4 +750,5 @@ export default function App() {
     </div>
   );
 }
+
 
