@@ -21,6 +21,8 @@ import {
   XCircle
 } from "lucide-react";
 
+import SocialFeed from "./componets/SocialFeed";
+
 // --- CONFIGURAÇÃO SANITY ---
 const PROJECT_ID = "hun2hrsa";
 const DATASET = "production";
@@ -719,6 +721,7 @@ export default function App() {
                       </ul>
                     </div>
                   </aside>
+                  <SocialFeed /> {/* ← ADICIONA AQUI */}
                 </div>
               </>
             )}
