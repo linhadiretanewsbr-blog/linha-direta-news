@@ -658,12 +658,12 @@ export default function App() {
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
                   <div className="lg:col-span-2">
+                    <SocialFeed />
+
                     <div className="flex items-center mb-8 pb-2 border-b-2 border-gray-100">
                       <div className="w-2 h-8 bg-[#1B5E20] mr-3"></div>
                       <h3 className="text-2xl font-bold text-gray-900">Feed de Notícias</h3>
                     </div>
-
-                    <SocialFeed /> {/* ← COLE AQUI */}
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                       {gridArticles.map((article) => (
@@ -723,7 +723,6 @@ export default function App() {
                       </ul>
                     </div>
                   </aside>
-                  <SocialFeed /> {/* ← ADICIONA AQUI */}
                 </div>
               </>
             )}
