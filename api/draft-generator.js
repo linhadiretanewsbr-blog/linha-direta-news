@@ -54,7 +54,7 @@ export default async function handler(req, res) {
       `&lang=${encodeURIComponent(lang)}` +
       `&country=${encodeURIComponent(country)}` +
       `&max=${encodeURIComponent(max)}` +
-      `&token=${encodeURIComponent(gnewsKey)}`;
+      `&apikey=${encodeURIComponent(gnewsKey)};
 
     const response = await fetch(gnewsUrl);
 
