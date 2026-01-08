@@ -21,7 +21,7 @@ import {
   XCircle
 } from "lucide-react";
 
-import SocialFooter from "./components/SocialFooter";
+import SocialSection from "./components/SocialSection";
 
 // --- CONFIGURAÇÃO SANITY ---
 const PROJECT_ID = "hun2hrsa";
@@ -730,41 +730,7 @@ export default function App() {
         )}
       </main>
 
-      <SocialFooter />
-
-      <footer className="bg-[#0f3311] text-white py-12 border-t-4 border-[#FFD700]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
-            <div>
-              <h4 className="text-lg font-bold text-[#FFD700] mb-4">Linha Direta News</h4>
-              <p className="text-green-100 text-sm leading-relaxed">Jornalismo independente focado na soberania nacional. Análises, opinião e cobertura aprofundada sobre política e geopolítica.</p>
-            </div>
-
-            <div>
-              <h4 className="text-lg font-bold text-[#FFD700] mb-4">Editorial</h4>
-              <ul className="space-y-2 text-sm text-green-100">
-                <li>Política Nacional</li>
-                <li>Geopolítica</li>
-                <li>Economia</li>
-              </ul>
-            </div>
-
-            <div className="text-right">
-              <button
-                onClick={() => setView("login")}
-                className="text-xs text-green-700 hover:text-[#FFD700] transition-colors flex items-center justify-end w-full"
-              >
-                <Lock className="w-3 h-3 mr-1" /> Acesso Administrativo
-              </button>
-            </div>
-          </div>
-
-          <div className="border-t border-green-800 pt-8 text-center text-xs text-green-400">
-            <p>&copy; 2026 Linha Direta News. Todos os direitos reservados.</p>
-            <p className="mt-2">Contato: contato@linhadiretanews.br • Política de Privacidade • Termos de Uso</p>
-          </div>
-        </div>
-      </footer>
+      <SocialSection />
     </div>
   );
 }
