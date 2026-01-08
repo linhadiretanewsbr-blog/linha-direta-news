@@ -1,13 +1,11 @@
-import { NextResponse } from 'next/server'
-
-export async function GET() {
+export default async function handler(req, res) {
   try {
     // YouTube RSS oficial (estável)
     const ytRss = `https://www.youtube.com/feeds/videos.xml?channel_id=UCDt2EBfMb9YFIyrzdRQ6PIQ`
     const ytUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(ytRss)}`
-    const ytRes = await fetch(ytUrl, { next: { revalidate: 300 } }) // 5 min cache
+    const ytRes = await fetch(ytUrl)
     const ytData = await ytRes.json()
-    const videos = (ytData.items || []).slice(0, 3).map((item: any) => ({
+    const videos = (ytData.items || []).slice(0, 3).map(item => ({
       id: item.guid,
       title: item.title,
       thumbnail: item.thumbnail,
@@ -17,21 +15,22 @@ export async function GET() {
     // Instagram via RSSHub (cache para estabilidade)
     const igRss = 'https://rsshub.app/instagram/user/linhadiretanewsrj'
     const igUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(igRss)}`
-    const igRes = await fetch(igUrl, { next: { revalidate: 600 } }) // 10 min
+    const igRes = await fetch(igUrl)
     const igData = await igRes.json()
     const igImages = (igData.items || [])
       .slice(0, 3)
-      .map((item: any) => {
+      .map(item => {
         const html = item.description || ''
         const match = html.match(/<img[^>]+src=["']([^"']+)["']/i)
         return match ? match[1] : null
       })
       .filter(Boolean)
 
-    return NextResponse.json({ videos, instagram: igImages }, {
-      headers: { 'Cache-Control': 's-maxage=300, stale-while-revalidate' }
-    })
+    res.setHeader('Content-Type', 'application/json')
+    res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate')
+    return res.status(200).send(JSON.stringify({ videos, instagram: igImages }))
   } catch (error) {
-    return NextResponse.json({ videos: [], instagram: [] }, { status: 200 })
+    res.setHeader('Content-Type', 'application/json')
+    return res.status(200).send(JSON.stringify({ videos: [], instagram: [] }))
   }
 }
