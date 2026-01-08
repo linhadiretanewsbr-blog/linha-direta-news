@@ -2,34 +2,65 @@ import { useEffect, useState } from 'react'
 
 export default function SocialFeed() {
   const [videos, setVideos] = useState([])
-  
+  const CHANNEL_ID = 'UCDt2EBfMb9YFIyrzdRQ6PIQ'
+
   useEffect(() => {
-    fetch('https://api.rss2json.com/v1/api.json?rss_url=https://www.youtube.com/feeds/videos.xml?channel_id=UC_x5XG1OV2P6uZZ5FSM9Ttw')
-      .then(r => r.json())
-      .then(d => setVideos(d.items?.slice(0, 3) || []))
+    const rss = `https://www.youtube.com/feeds/videos.xml?channel_id=${CHANNEL_ID}`
+    const url = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rss)}`
+
+    fetch(url)
+      .then((r) => r.json())
+      .then((d) => setVideos(d.items?.slice(0, 3) || []))
+      .catch((err) => {
+        console.warn('Erro ao carregar YouTube:', err)
+        setVideos([])
+      })
   }, [])
-  
+
   return (
-    <section className="bg-gradient-to-r from-emerald-50 to-green-50 p-8 rounded-2xl border-4 border-emerald-200 shadow-2xl mb-12">
-      <h3 className="font-black text-3xl bg-gradient-to-r from-emerald-700 to-green-900 bg-clip-text text-transparent mb-8 text-center">
-        📺 YouTube LDN
-      </h3>
-      <div className="grid grid-cols-3 gap-6">
-        {videos.map((v, i) => (
-          <a key={v.guid} href={v.link} target="_blank" rel="noreferrer" className="group hover:shadow-2xl hover:scale-105">
-            <img src={v.thumbnail} alt={v.title} className="w-full h-40 object-cover rounded-2xl group-hover:scale-110" />
-            <p className="text-sm font-bold mt-3 line-clamp-2 text-gray-900">{v.title}</p>
-          </a>
-        ))}
+    <section className="bg-emerald-50 p-6 rounded-2xl border-emerald-200 border-2 mb-8">
+      <h3 className="font-black text-3xl text-emerald-800 mb-6 text-center">📺 Últimos Vídeos</h3>
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {videos.length
+          ? videos.map((v) => (
+              <a
+                key={v.guid}
+                href={v.link}
+                target="_blank"
+                rel="noreferrer"
+                className="group block overflow-hidden rounded-xl shadow hover:shadow-2xl transition-transform transform hover:-translate-y-1"
+              >
+                <img
+                  src={v.thumbnail}
+                  alt={v.title}
+                  className="w-full h-40 md:h-48 object-cover"
+                  onError={(e) => (e.currentTarget.src = '/placeholder.jpg')}
+                />
+                <p className="text-sm font-bold mt-3 px-2 line-clamp-2 text-gray-800 group-hover:text-emerald-700">{v.title}</p>
+              </a>
+            ))
+          : [1, 2, 3].map((i) => (
+              <a
+                key={i}
+                href={`https://www.youtube.com/channel/${CHANNEL_ID}`}
+                target="_blank"
+                rel="noreferrer"
+                className="group block overflow-hidden rounded-xl shadow transition-all"
+              >
+                <div className="w-full h-40 md:h-48 bg-gray-200 flex items-center justify-center rounded-xl"></div>
+              </a>
+            ))}
       </div>
-      
-      {/* Instagram */}
-      <div className="mt-8 pt-8 border-t-4 border-emerald-200">
-        <h4 className="font-bold text-xl text-emerald-800 mb-4 text-center">📸 @linhadiretanewsrj</h4>
-        <a href="https://instagram.com/linhadiretanewsrj" target="_blank" rel="noreferrer" className="block mx-auto max-w-sm">
-          <iframe src="https://www.instagram.com/linhadiretanewsrj/embed" className="w-full h-80 rounded-2xl" />
-        </a>
-      </div>
+
+      <a
+        href={`https://www.youtube.com/channel/${CHANNEL_ID}`}
+        target="_blank"
+        rel="noreferrer"
+        className="block text-center mt-4 text-emerald-600 font-bold hover:underline"
+      >
+        Ver canal →
+      </a>
     </section>
   )
 }
