@@ -2,65 +2,36 @@ export default function SocialFooter() {
   return (
     <footer className="bg-gradient-to-r from-emerald-900 to-green-900 py-12 mt-24">
       <div className="max-w-7xl mx-auto px-4 grid md:grid-cols-2 gap-12 items-center">
-        
-        {/* YouTube Horizontal */}
-        <div className="text-center lg:text-left">
-          <h3 className="text-4xl font-black mb-8 bg-gradient-to-r from-red-500 to-yellow-500 bg-clip-text text-transparent">
-            📺 YouTube LDN Brasil
-          </h3>
-          <div className="grid grid-cols-3 gap-6 max-w-lg mx-auto lg:mx-0">
-            <a href="https://youtube.com/@LinhaDiretaNewsBrasil" target="_blank" rel="noreferrer" className="group hover:scale-110">
-              <div className="aspect-[16/9] bg-gradient-to-br from-red-600 to-orange-500 rounded-3xl shadow-2xl overflow-hidden hover:shadow-red-500/50 transition-all">
-                <div className="h-full flex items-center justify-center p-4">
-                  <span className="text-3xl font-black text-white drop-shadow-2xl">▶</span>
-                </div>
-              </div>
-              <p className="text-sm font-bold mt-3 text-gray-700 text-center">Canal LDN</p>
-            </a>
-            <a href="https://youtube.com/@LinhaDiretaNewsBrasil" target="_blank" rel="noreferrer" className="group hover:scale-110">
-              <div className="aspect-[16/9] bg-gradient-to-br from-emerald-600 to-emerald-400 rounded-3xl shadow-2xl overflow-hidden hover:shadow-emerald-500/50 transition-all">
-                <div className="h-full flex items-center justify-center p-4">
-                  <span className="text-3xl font-black text-white drop-shadow-2xl">▶</span>
-                </div>
-              </div>
-              <p className="text-sm font-bold mt-3 text-gray-700 text-center">Análises</p>
-            </a>
-            <a href="https://youtube.com/@LinhaDiretaNewsBrasil" target="_blank" rel="noreferrer" className="group hover:scale-110">
-              <div className="aspect-[16/9] bg-gradient-to-br from-blue-600 to-indigo-500 rounded-3xl shadow-2xl overflow-hidden hover:shadow-blue-500/50 transition-all flex items-center justify-center">
-                <span className="text-3xl font-black text-white">➕</span>
-              </div>
-              <p className="text-sm font-bold mt-3 text-gray-700 text-center">Mais vídeos</p>
-            </a>
-          </div>
-        </div>
-        
-        {/* Instagram */}
-        import { useEffect, useState } from "react"
+        import { useEffect, useState } from 'react'
 
         export default function SocialFooter() {
           const [videos, setVideos] = useState([])
           const [igImages, setIgImages] = useState([])
+          const CHANNEL_ID = 'UCDt2EBfMb9YFIyrzdRQ6PIQ'
 
           useEffect(() => {
-            // YouTube via rss2json (public client-side)
-            const channelId = "UC_x5XG1OV2P6uZZ5FSM9Ttw"
-            const ytUrl = `https://api.rss2json.com/v1/api.json?rss_url=https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`
+            const ytRss = `https://www.youtube.com/feeds/videos.xml?channel_id=${CHANNEL_ID}`
+            const ytUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(ytRss)}`
+
             fetch(ytUrl)
-              .then(r => r.json())
-              .then(d => setVideos(d.items?.slice(0, 3) || []))
+              .then((r) => r.json())
+              .then((d) => setVideos(d.items?.slice(0, 3) || []))
               .catch(() => setVideos([]))
 
-            // Instagram via RSSHub -> rss2json (best-effort public fetch). If fails, fallback to placeholders.
-            const igRss = encodeURIComponent("https://rsshub.app/instagram/user/linhadiretanewsrj")
+            // Instagram via RSSHub -> rss2json (best-effort). If it fails, use placeholders.
+            const igRss = encodeURIComponent('https://rsshub.app/instagram/user/linhadiretanewsrj')
             const igUrl = `https://api.rss2json.com/v1/api.json?rss_url=${igRss}`
             fetch(igUrl)
-              .then(r => r.json())
-              .then(d => {
-                const imgs = (d.items || []).slice(0, 3).map(item => {
-                  const html = item.description || item.content || ""
-                  const m = html.match(/<img[^>]+src=\"([^\"]+)\"/i)
-                  return m ? m[1] : null
-                }).filter(Boolean)
+              .then((r) => r.json())
+              .then((d) => {
+                const imgs = (d.items || [])
+                  .slice(0, 3)
+                  .map((item) => {
+                    const html = item.description || item.content || ''
+                    const m = html.match(/<img[^>]+src=\"([^\"]+)\"/i)
+                    return m ? m[1] : null
+                  })
+                  .filter(Boolean)
                 setIgImages(imgs)
               })
               .catch(() => setIgImages([]))
@@ -77,15 +48,15 @@ export default function SocialFooter() {
                   </h3>
                   <div className="grid grid-cols-3 gap-6 max-w-lg mx-auto lg:mx-0">
                     {videos.length ? (
-                      videos.map(v => (
+                      videos.map((v) => (
                         <a key={v.guid} href={v.link} target="_blank" rel="noreferrer" className="group block">
                           <img src={v.thumbnail} alt={v.title} className="w-full h-40 object-cover rounded-2xl shadow-lg" />
                           <p className="text-sm font-bold mt-2 text-gray-700 text-center line-clamp-2">{v.title}</p>
                         </a>
                       ))
                     ) : (
-                      [1,2,3].map(i => (
-                        <a key={i} href="https://youtube.com/@LinhaDiretaNewsBrasil" target="_blank" rel="noreferrer" className="group block">
+                      [1, 2, 3].map((i) => (
+                        <a key={i} href={`https://www.youtube.com/channel/${CHANNEL_ID}`} target="_blank" rel="noreferrer" className="group block">
                           <div className="aspect-[16/9] bg-gray-200 rounded-2xl shadow-lg flex items-center justify-center"></div>
                         </a>
                       ))
@@ -100,11 +71,11 @@ export default function SocialFooter() {
                     {igImages.length ? (
                       igImages.map((src, i) => (
                         <a key={i} href="https://instagram.com/linhadiretanewsrj" target="_blank" rel="noreferrer" className="block overflow-hidden rounded-2xl shadow-lg">
-                          <img src={src} alt={`IG ${i+1}`} className="w-full h-40 object-cover" />
+                          <img src={src} alt={`IG ${i + 1}`} className="w-full h-40 object-cover" />
                         </a>
                       ))
                     ) : (
-                      [1,2,3].map(i => (
+                      [1, 2, 3].map((i) => (
                         <a key={i} href="https://instagram.com/linhadiretanewsrj" target="_blank" rel="noreferrer" className="block overflow-hidden rounded-2xl shadow-lg">
                           <img src={`https://placehold.co/600x400?text=IG+${i}`} alt={`IG ${i}`} className="w-full h-40 object-cover" />
                         </a>
@@ -116,3 +87,4 @@ export default function SocialFooter() {
             </section>
           )
         }
+                        </a>
