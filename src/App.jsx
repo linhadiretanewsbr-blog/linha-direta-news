@@ -18,10 +18,10 @@ import {
   RefreshCw,
   AlertCircle,
   WifiOff,
-  XCircle
+  XCircle,
+  Youtube,
+  Instagram
 } from "lucide-react";
-
-import SocialSection from "./components/SocialSection";
 
 // --- CONFIGURAÇÃO SANITY ---
 const PROJECT_ID = "hun2hrsa";
@@ -730,7 +730,29 @@ export default function App() {
         )}
       </main>
 
-      <SocialSection />
+      <footer className="bg-white border-t mt-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex items-center justify-center space-x-6">
+          <a
+            href="https://www.youtube.com/channel/UCDt2EBfMb9YFIyrzdRQ6PIQ"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center space-x-2 text-[#FF0000] font-bold hover:underline"
+          >
+            <Youtube className="w-5 h-5" />
+            <span>Canal YouTube</span>
+          </a>
+
+          <a
+            href="https://instagram.com/linhadiretanewsrj"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center space-x-2 text-pink-600 font-bold hover:underline"
+          >
+            <Instagram className="w-5 h-5" />
+            <span>@linhadiretanewsrj</span>
+          </a>
+        </div>
+      </footer>
     </div>
   );
 }
